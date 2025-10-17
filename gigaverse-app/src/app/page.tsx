@@ -97,7 +97,7 @@ export default function Home() {
                 {items.length === 0 ? (
                   <div className="text-sm text-gray-600 mt-2">Không có items</div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                     {items.map((it: any) => (
                       <div key={`${address}-${it.id}`} className="flex items-center justify-between p-3 bg-white/50 dark:bg-black/30 rounded-lg border border-gray-200">
                         <div className="flex items-center gap-3 flex-1 min-w-0">

@@ -47,7 +47,7 @@ export type ItemMetadata = {
   name: string;
   description: string;
   image: string;
-  icon?: string;
+  icon: string;
   attributes: Array<{
     trait_type: string;
     value: string;
@@ -210,7 +210,7 @@ export async function mapAddressesToItems(addresses: string[], offline = false):
       id: itemId,
       name: itemMetadata?.name || name,
       balance: totalBalance,
-      image: itemMetadata?.image,
+      image: itemMetadata?.icon || itemMetadata?.image, // Use icon field from metadata
       description: itemMetadata?.description,
       attributes: itemMetadata?.attributes
     });
