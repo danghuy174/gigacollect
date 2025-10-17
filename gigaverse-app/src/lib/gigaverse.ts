@@ -191,6 +191,7 @@ export async function mapAddressesToItems(addresses: string[], offline = false):
   
   // Create aggregated items with metadata
   const aggregatedItems: MappedItem[] = [];
+  const metadataCache = new Map<string, ItemMetadata | null>();
   
   for (const [itemId, { totalBalance }] of itemBalances) {
     // Find the corresponding game item by docId matching (ID_CID in balance = docId in gameItem)
@@ -198,19 +199,27 @@ export async function mapAddressesToItems(addresses: string[], offline = false):
     
     const name = String(meta?.NAME_CID ?? `Unknown #${itemId}`);
     
+    // Debug log
+    console.log(`Item ${itemId}: NAME_CID=${meta?.NAME_CID}, _id=${meta?._id}`);
+    
     // Fetch item metadata using the item's _id
     let metadataItemId = itemId;
     if (meta && meta._id) {
       metadataItemId = String(meta._id);
     }
     
-    const itemMetadata = await fetchItemMetadata(metadataItemId, baseUri, offline);
+    // Use cache to avoid fetching same metadata multiple times
+    let itemMetadata = metadataCache.get(metadataItemId);
+    if (itemMetadata === undefined) {
+      itemMetadata = await fetchItemMetadata(metadataItemId, baseUri, offline);
+      metadataCache.set(metadataItemId, itemMetadata);
+    }
     
     aggregatedItems.push({
       id: itemId,
-      name: itemMetadata?.name || name,
+      name: name, // Use NAME_CID from gameItem, not from metadata
       balance: totalBalance,
-      image: itemMetadata?.icon || itemMetadata?.image, // Use icon field from metadata
+      image: itemMetadata?.image, // Use image field from metadata (higher resolution)
       description: itemMetadata?.description,
       attributes: itemMetadata?.attributes
     });

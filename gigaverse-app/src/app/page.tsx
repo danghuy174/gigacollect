@@ -25,6 +25,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<ApiResponse["data"]>([]);
   const [offline, setOffline] = useState(false);
+  const [searchText, setSearchText] = useState("");
 
   const addresses = useMemo(
     () =>
@@ -34,6 +35,20 @@ export default function Home() {
         .filter(Boolean),
     [addressesText]
   );
+
+  // Filter results based on search text
+  const filteredResults = useMemo(() => {
+    if (!searchText.trim()) return results;
+    
+    return results.map(result => ({
+      ...result,
+      items: result.items.filter((item: any) => 
+        item.name.toLowerCase().includes(searchText.toLowerCase()) ||
+        item.id.includes(searchText) ||
+        (item.description && item.description.toLowerCase().includes(searchText.toLowerCase()))
+      )
+    }));
+  }, [results, searchText]);
 
   async function handleFetch() {
     setLoading(true);
@@ -90,8 +105,36 @@ export default function Home() {
             <div className="mt-4 text-sm text-red-600">{error}</div>
           )}
 
+          {results.length > 0 && (
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium">Tìm kiếm items:</label>
+                {searchText && (
+                  <button
+                    onClick={() => setSearchText("")}
+                    className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  >
+                    Xóa bộ lọc
+                  </button>
+                )}
+              </div>
+              <input
+                type="text"
+                className="w-full p-3 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                placeholder="Tìm theo tên, ID, hoặc mô tả..."
+                value={searchText}
+                onChange={(e: any) => setSearchText(e.target.value)}
+              />
+              {searchText && (
+                <div className="mt-2 text-xs text-gray-600">
+                  Tìm thấy {filteredResults.reduce((total, result) => total + result.items.length, 0)} items
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="mt-6 space-y-6">
-            {results.map(({ address, items }: any) => (
+            {filteredResults.map(({ address, items }: any) => (
               <div key={address} className="border border-gray-200 rounded-lg p-4 bg-white/70 dark:bg-black/40">
                 <div className="font-semibold text-sm break-all mb-4">{address}</div>
                 {items.length === 0 ? (
