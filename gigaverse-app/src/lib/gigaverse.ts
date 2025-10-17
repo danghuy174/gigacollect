@@ -82,7 +82,7 @@ export async function fetchGameItems(offline = false): Promise<Map<string, RawEn
   const buildMap = (resp: GameItemsResponse): Map<string, RawEntity> => {
     const map = new Map<string, RawEntity>();
     for (const entity of resp.entities ?? []) {
-      const id = String(entity.docId ?? entity.ID_CID ?? "");
+      const id = String(entity.docId ?? "");
       if (!id) continue;
       map.set(id, entity);
     }
@@ -96,14 +96,20 @@ export async function fetchGameItems(offline = false): Promise<Map<string, RawEn
   }
 
   try {
-    const res = await fetch("https://gigaverse.io/api/indexer/gameItems", { cache: "no-store" });
+    const res = await fetch("https://gigaverse.io/api/indexer/gameitems", { cache: "no-store" });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = (await res.json()) as GameItemsResponse;
     return buildMap(data);
   } catch (error) {
-    // If API fails, return empty map instead of falling back to sample data
-    console.error('Failed to fetch game items:', error);
-    return new Map<string, RawEntity>();
+    // If API fails, fallback to sample data for development
+    console.error('Failed to fetch game items from API, using sample data:', error);
+    try {
+      const resp = await readJsonFromFile<GameItemsResponse>("data/log_example/game_item.json");
+      return buildMap(resp);
+    } catch (fallbackError) {
+      console.error('Failed to load sample data:', fallbackError);
+      return new Map<string, RawEntity>();
+    }
   }
 }
 
@@ -123,15 +129,28 @@ export async function fetchPlayerItems(address: string, offline = false): Promis
 
   try {
     const res = await fetch(
-      `https://gigaverse.io/api/indexer/player/gameitems/${address}`,
+      `https://gigaverse.io/api/importexport/balances/${address}`,
       { cache: "no-store" }
     );
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return (await res.json()) as PlayerItemsResponse;
   } catch (error) {
-    // If API fails, return empty result instead of falling back to sample data
-    console.error('Failed to fetch player items:', error);
-    return { entities: [] };
+    // If API fails, fallback to sample data for development
+    console.error('Failed to fetch player items from API, using sample data:', error);
+    try {
+      const filePath = path.join(process.cwd(), "data/log_example/balance.json");
+      const content = await readFile(filePath, "utf8");
+      const lines = content.split('\n');
+      const jsonStartIndex = lines.findIndex((line: string) => line.trim().startsWith('{'));
+      const jsonContent = lines.slice(jsonStartIndex).join('\n');
+      const resp = JSON.parse(jsonContent) as PlayerItemsResponse;
+      const sampleAddr = (resp.entities?.[0]?.PLAYER_CID as string | undefined)?.toLowerCase();
+      if (sampleAddr && sampleAddr === address.toLowerCase()) return resp;
+      return { entities: [] };
+    } catch (fallbackError) {
+      console.error('Failed to load sample data:', fallbackError);
+      return { entities: [] };
+    }
   }
 }
 
@@ -174,14 +193,8 @@ export async function mapAddressesToItems(addresses: string[], offline = false):
   const aggregatedItems: MappedItem[] = [];
   
   for (const [itemId, { totalBalance }] of itemBalances) {
-    // Find the corresponding game item by ID_CID matching
-    let meta: RawEntity | undefined;
-    for (const [key, entity] of gameItemsMap) {
-      if (entity.ID_CID === itemId || entity.docId === itemId) {
-        meta = entity;
-        break;
-      }
-    }
+    // Find the corresponding game item by docId matching (ID_CID in balance = docId in gameItem)
+    const meta = gameItemsMap.get(itemId);
     
     const name = String(meta?.NAME_CID ?? `Unknown #${itemId}`);
     
