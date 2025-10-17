@@ -43,7 +43,7 @@ export default function Home() {
     
     return results.map(result => ({
       ...result,
-      items: result.items.filter((item: any) => 
+      items: result.items.filter((item) => 
         item.name.toLowerCase().includes(searchText.toLowerCase()) ||
         item.id.includes(searchText) ||
         (item.description && item.description.toLowerCase().includes(searchText.toLowerCase()))
@@ -65,7 +65,7 @@ export default function Home() {
       const json = (await res.json()) as ApiResponse;
       setResults(json.data ?? []);
       setProgress({ current: addresses.length, total: addresses.length, message: "Hoàn thành!" });
-    } catch (e: any) {
+    } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Request failed";
       setError(message);
     } finally {
@@ -88,12 +88,12 @@ export default function Home() {
             className="w-full h-32 p-3 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             placeholder="0x123..., 0xabc..., ..."
             value={addressesText}
-            onChange={(e: any) => setAddressesText(e.target.value)}
+            onChange={(e) => setAddressesText(e.target.value)}
           />
 
           <div className="mt-3 flex items-center justify-between">
             <label className="inline-flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={offline} onChange={(e: any) => setOffline(e.target.checked)} />
+              <input type="checkbox" checked={offline} onChange={(e) => setOffline(e.target.checked)} />
               Dùng dữ liệu mẫu (offline)
             </label>
             <button
@@ -142,7 +142,7 @@ export default function Home() {
                 className="w-full p-3 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 placeholder="Tìm theo tên, ID, hoặc mô tả..."
                 value={searchText}
-                onChange={(e: any) => setSearchText(e.target.value)}
+                onChange={(e) => setSearchText(e.target.value)}
               />
               {searchText && (
                 <div className="mt-2 text-xs text-gray-600">
@@ -153,14 +153,14 @@ export default function Home() {
           )}
 
           <div className="mt-6 space-y-6">
-            {filteredResults.map(({ address, items }: any) => (
+            {filteredResults.map(({ address, items }) => (
               <div key={address} className="border border-gray-200 rounded-lg p-4 bg-white/70 dark:bg-black/40">
                 <div className="font-semibold text-sm break-all mb-4">{address}</div>
                 {items.length === 0 ? (
                   <div className="text-sm text-gray-600 mt-2">Không có items</div>
                 ) : (
                   <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
-                    {items.map((it: any) => (
+                    {items.map((it) => (
                       <div key={`${address}-${it.id}`} className="flex items-center justify-between p-3 bg-white/50 dark:bg-black/30 rounded-lg border border-gray-200">
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           {it.image && (
@@ -171,7 +171,7 @@ export default function Home() {
                                 width={40}
                                 height={40}
                                 className="rounded object-cover"
-                                onError={(e: any) => {
+                                onError={(e) => {
                                   const target = e.target as HTMLImageElement;
                                   target.style.display = 'none';
                                 }}
@@ -191,7 +191,7 @@ export default function Home() {
                             <div className="text-lg font-bold text-blue-600">x{it.balance.toLocaleString()}</div>
                             {it.attributes && it.attributes.length > 0 && (
                               <div className="text-xs text-gray-500">
-                                {it.attributes.find((attr: any) => attr.trait_type === 'Rarity')?.value || 'Common'}
+                                {it.attributes.find((attr) => attr.trait_type === 'Rarity')?.value || 'Common'}
                               </div>
                             )}
                           </div>

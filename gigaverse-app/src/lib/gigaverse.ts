@@ -61,6 +61,7 @@ export async function fetchItemMetadata(itemId: string, baseUri: string, offline
       name: `Item #${itemId}`,
       description: "Sample item description",
       image: "https://via.placeholder.com/200x200?text=Item",
+      icon: "https://via.placeholder.com/64x64?text=Icon",
       attributes: [
         { trait_type: "Rarity", value: "Common" },
         { trait_type: "Type", value: "Game Item" }
@@ -198,7 +199,7 @@ export async function mapAddressesToItems(addresses: string[], offline = false):
 
   // Get base URI from game items (look for the contract item with docId "0")
   let baseUri = "https://gigaverse.io/api/metadata/gameItem/";
-  for (const [key, entity] of gameItemsMap) {
+  for (const [, entity] of gameItemsMap) {
     if (entity.docId === "0" && entity.BASE_URI_CID) {
       baseUri = String(entity.BASE_URI_CID);
       break;
