@@ -39,5 +39,5 @@ externalPort = 3000
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["bash", "-c", "cd gigaverse-app && npm run start"]
-build = ["bash", "-c", "cd gigaverse-app && npm run build"]
+run = ["sh", "-c", "cd gigaverse-app && npm run start"]
+build = ["sh", "-c", "cd gigaverse-app && npm run build"]
