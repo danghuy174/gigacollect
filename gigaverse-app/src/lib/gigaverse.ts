@@ -202,11 +202,8 @@ export async function mapAddressesToItems(addresses: string[], offline = false):
     // Debug log
     console.log(`Item ${itemId}: NAME_CID=${meta?.NAME_CID}, _id=${meta?._id}`);
     
-    // Fetch item metadata using the item's _id
-    let metadataItemId = itemId;
-    if (meta && meta._id) {
-      metadataItemId = String(meta._id);
-    }
+    // Fetch item metadata using the item's docId
+    let metadataItemId = itemId; // itemId is already the docId from balance
     
     // Use cache to avoid fetching same metadata multiple times
     let itemMetadata = metadataCache.get(metadataItemId);
