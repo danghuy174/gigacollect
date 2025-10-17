@@ -1,12 +1,14 @@
-import path from "node:path";
-import { readFile } from "node:fs/promises";
+import path from "path";
+import { readFile } from "fs/promises";
 
 export type RawEntity = {
+  _id?: string;
   docId?: string;
   ID_CID?: string;
   NAME_CID?: string;
   PLAYER_CID?: string;
   BALANCE_CID?: number;
+  BASE_URI_CID?: string;
   [key: string]: unknown;
 };
 
@@ -120,7 +122,13 @@ export async function fetchPlayerItems(address: string, offline = false): Promis
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return (await res.json()) as PlayerItemsResponse;
   } catch {
-    const resp = await readJsonFromFile<PlayerItemsResponse>("data/log_example/balance.json");
+    // Handle the format with URL at the top of the file
+    const filePath = path.join(process.cwd(), "data/log_example/balance.json");
+    const content = await readFile(filePath, "utf8");
+    const lines = content.split('\n');
+    const jsonStartIndex = lines.findIndex((line: string) => line.trim().startsWith('{'));
+    const jsonContent = lines.slice(jsonStartIndex).join('\n');
+    const resp = JSON.parse(jsonContent) as PlayerItemsResponse;
     return resp;
   }
 }
@@ -150,18 +158,37 @@ export async function mapAddressesToItems(addresses: string[], offline = false):
     }
   }
 
-  // Get base URI from game items
-  const baseUri = gameItemsMap.get("0")?.BASE_URI_CID || "https://gigaverse.io/api/metadata/gameItem/";
+  // Get base URI from game items (look for the contract item with docId "0")
+  let baseUri = "https://gigaverse.io/api/metadata/gameItem/";
+  for (const [key, entity] of gameItemsMap) {
+    if (entity.docId === "0" && entity.BASE_URI_CID) {
+      baseUri = String(entity.BASE_URI_CID);
+      break;
+    }
+  }
   
   // Create aggregated items with metadata
   const aggregatedItems: MappedItem[] = [];
   
   for (const [itemId, { totalBalance }] of itemBalances) {
-    const meta = gameItemsMap.get(itemId);
+    // Find the corresponding game item by ID_CID matching
+    let meta: RawEntity | undefined;
+    for (const [key, entity] of gameItemsMap) {
+      if (entity.ID_CID === itemId || entity.docId === itemId) {
+        meta = entity;
+        break;
+      }
+    }
+    
     const name = String(meta?.NAME_CID ?? `Unknown #${itemId}`);
     
-    // Fetch item metadata
-    const itemMetadata = await fetchItemMetadata(itemId, baseUri, offline);
+    // Fetch item metadata using the item's _id
+    let metadataItemId = itemId;
+    if (meta && meta._id) {
+      metadataItemId = String(meta._id);
+    }
+    
+    const itemMetadata = await fetchItemMetadata(metadataItemId, baseUri, offline);
     
     aggregatedItems.push({
       id: itemId,
