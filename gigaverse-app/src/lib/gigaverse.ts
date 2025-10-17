@@ -90,6 +90,7 @@ export async function fetchGameItems(offline = false): Promise<Map<string, RawEn
   };
 
   if (offline) {
+    // Use sample data only when offline mode is explicitly requested
     const resp = await readJsonFromFile<GameItemsResponse>("data/log_example/game_item.json");
     return buildMap(resp);
   }
@@ -99,16 +100,22 @@ export async function fetchGameItems(offline = false): Promise<Map<string, RawEn
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = (await res.json()) as GameItemsResponse;
     return buildMap(data);
-  } catch {
-    const resp = await readJsonFromFile<GameItemsResponse>("data/log_example/game_item.json");
-    return buildMap(resp);
+  } catch (error) {
+    // If API fails, return empty map instead of falling back to sample data
+    console.error('Failed to fetch game items:', error);
+    return new Map<string, RawEntity>();
   }
 }
 
 export async function fetchPlayerItems(address: string, offline = false): Promise<PlayerItemsResponse> {
   if (offline) {
-    // Local sample contains a single address snapshot; return that when it matches, else empty
-    const resp = await readJsonFromFile<PlayerItemsResponse>("data/log_example/balance.json");
+    // Use sample data only when offline mode is explicitly requested
+    const filePath = path.join(process.cwd(), "data/log_example/balance.json");
+    const content = await readFile(filePath, "utf8");
+    const lines = content.split('\n');
+    const jsonStartIndex = lines.findIndex((line: string) => line.trim().startsWith('{'));
+    const jsonContent = lines.slice(jsonStartIndex).join('\n');
+    const resp = JSON.parse(jsonContent) as PlayerItemsResponse;
     const sampleAddr = (resp.entities?.[0]?.PLAYER_CID as string | undefined)?.toLowerCase();
     if (sampleAddr && sampleAddr === address.toLowerCase()) return resp;
     return { entities: [] };
@@ -121,15 +128,10 @@ export async function fetchPlayerItems(address: string, offline = false): Promis
     );
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return (await res.json()) as PlayerItemsResponse;
-  } catch {
-    // Handle the format with URL at the top of the file
-    const filePath = path.join(process.cwd(), "data/log_example/balance.json");
-    const content = await readFile(filePath, "utf8");
-    const lines = content.split('\n');
-    const jsonStartIndex = lines.findIndex((line: string) => line.trim().startsWith('{'));
-    const jsonContent = lines.slice(jsonStartIndex).join('\n');
-    const resp = JSON.parse(jsonContent) as PlayerItemsResponse;
-    return resp;
+  } catch (error) {
+    // If API fails, return empty result instead of falling back to sample data
+    console.error('Failed to fetch player items:', error);
+    return { entities: [] };
   }
 }
 
