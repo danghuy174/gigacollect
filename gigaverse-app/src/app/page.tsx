@@ -5,7 +5,17 @@ import Image from "next/image";
 type ApiResponse = {
   data: Array<{
     address: string;
-    items: Array<{ id: string; name: string; balance: number }>;
+    items: Array<{ 
+      id: string; 
+      name: string; 
+      balance: number;
+      image?: string;
+      description?: string;
+      attributes?: Array<{
+        trait_type: string;
+        value: string;
+      }>;
+    }>;
   }>;
 };
 
@@ -83,19 +93,53 @@ export default function Home() {
           <div className="mt-6 space-y-6">
             {results.map(({ address, items }) => (
               <div key={address} className="border border-gray-200 rounded-lg p-4 bg-white/70 dark:bg-black/40">
-                <div className="font-semibold text-sm break-all">{address}</div>
+                <div className="font-semibold text-sm break-all mb-4">{address}</div>
                 {items.length === 0 ? (
                   <div className="text-sm text-gray-600 mt-2">Không có items</div>
                 ) : (
-                  <ul className="mt-2 divide-y divide-gray-200">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {items.map((it) => (
-                      <li key={`${address}-${it.id}`} className="py-2 flex items-center justify-between text-sm">
-                        <span className="font-medium">{it.name}</span>
-                        <span className="text-gray-700">x{it.balance}</span>
-                        <span className="text-gray-500">ID: {it.id}</span>
-                      </li>
+                      <div key={`${address}-${it.id}`} className="border border-gray-200 rounded-lg p-3 bg-white/50 dark:bg-black/30">
+                        <div className="flex items-start gap-3">
+                          {it.image && (
+                            <div className="flex-shrink-0">
+                              <Image
+                                src={it.image}
+                                alt={it.name}
+                                width={60}
+                                height={60}
+                                className="rounded-lg object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                }}
+                              />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm truncate">{it.name}</div>
+                            <div className="text-lg font-bold text-blue-600">x{it.balance.toLocaleString()}</div>
+                            <div className="text-xs text-gray-500">ID: {it.id}</div>
+                            {it.description && (
+                              <div className="text-xs text-gray-600 mt-1 line-clamp-2">{it.description}</div>
+                            )}
+                            {it.attributes && it.attributes.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-1">
+                                {it.attributes.slice(0, 3).map((attr, idx) => (
+                                  <span key={idx} className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                                    {attr.trait_type}: {attr.value}
+                                  </span>
+                                ))}
+                                {it.attributes.length > 3 && (
+                                  <span className="text-xs text-gray-500">+{it.attributes.length - 3} more</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 )}
               </div>
             ))}

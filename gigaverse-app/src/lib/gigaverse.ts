@@ -22,6 +22,12 @@ export type MappedItem = {
   id: string;
   name: string;
   balance: number;
+  image?: string;
+  description?: string;
+  attributes?: Array<{
+    trait_type: string;
+    value: string;
+  }>;
 };
 
 export type AddressItems = {
@@ -33,6 +39,41 @@ async function readJsonFromFile<T = unknown>(relativeFilePath: string): Promise<
   const filePath = path.join(process.cwd(), relativeFilePath);
   const content = await readFile(filePath, "utf8");
   return JSON.parse(content) as T;
+}
+
+export type ItemMetadata = {
+  name: string;
+  description: string;
+  image: string;
+  icon?: string;
+  attributes: Array<{
+    trait_type: string;
+    value: string;
+  }>;
+};
+
+export async function fetchItemMetadata(itemId: string, baseUri: string, offline = false): Promise<ItemMetadata | null> {
+  if (offline) {
+    // For offline mode, return sample metadata
+    return {
+      name: `Item #${itemId}`,
+      description: "Sample item description",
+      image: "https://via.placeholder.com/200x200?text=Item",
+      attributes: [
+        { trait_type: "Rarity", value: "Common" },
+        { trait_type: "Type", value: "Game Item" }
+      ]
+    };
+  }
+
+  try {
+    const url = `${baseUri}${itemId}`;
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return (await res.json()) as ItemMetadata;
+  } catch {
+    return null;
+  }
 }
 
 export async function fetchGameItems(offline = false): Promise<Map<string, RawEntity>> {
@@ -86,31 +127,58 @@ export async function fetchPlayerItems(address: string, offline = false): Promis
 
 export async function mapAddressesToItems(addresses: string[], offline = false): Promise<AddressItems[]> {
   const gameItemsMap = await fetchGameItems(offline);
+  
+  // Aggregate balances across all addresses
+  const itemBalances = new Map<string, { totalBalance: number; itemId: string }>();
+  
+  // Process all addresses to aggregate balances
+  for (const addrRaw of addresses) {
+    const address = addrRaw.trim();
+    if (!address) continue;
 
-  const results = await Promise.all(
-    addresses.map(async (addrRaw) => {
-      const address = addrRaw.trim();
-      if (!address) return { address, items: [] } satisfies AddressItems;
+    const playerResp = await fetchPlayerItems(address, offline);
+    
+    for (const entity of playerResp.entities ?? []) {
+      const id = String((entity as RawEntity).ID_CID ?? "");
+      const balance = Number((entity as RawEntity).BALANCE_CID ?? 0);
+      if (!id) continue;
+      if (!Number.isFinite(balance) || balance <= 0) continue;
 
-      const playerResp = await fetchPlayerItems(address, offline);
-      const items: MappedItem[] = [];
+      const current = itemBalances.get(id) || { totalBalance: 0, itemId: id };
+      current.totalBalance += balance;
+      itemBalances.set(id, current);
+    }
+  }
 
-      for (const entity of playerResp.entities ?? []) {
-        const id = String((entity as RawEntity).ID_CID ?? "");
-        const balance = Number((entity as RawEntity).BALANCE_CID ?? 0);
-        if (!id) continue;
-        if (!Number.isFinite(balance) || balance <= 0) continue;
+  // Get base URI from game items
+  const baseUri = gameItemsMap.get("0")?.BASE_URI_CID || "https://gigaverse.io/api/metadata/gameItem/";
+  
+  // Create aggregated items with metadata
+  const aggregatedItems: MappedItem[] = [];
+  
+  for (const [itemId, { totalBalance }] of itemBalances) {
+    const meta = gameItemsMap.get(itemId);
+    const name = String(meta?.NAME_CID ?? `Unknown #${itemId}`);
+    
+    // Fetch item metadata
+    const itemMetadata = await fetchItemMetadata(itemId, baseUri, offline);
+    
+    aggregatedItems.push({
+      id: itemId,
+      name: itemMetadata?.name || name,
+      balance: totalBalance,
+      image: itemMetadata?.image,
+      description: itemMetadata?.description,
+      attributes: itemMetadata?.attributes
+    });
+  }
 
-        const meta = gameItemsMap.get(id);
-        const name = String(meta?.NAME_CID ?? `Unknown #${id}`);
-        items.push({ id, name, balance });
-      }
+  // Sort by name then id for stable output
+  aggregatedItems.sort((a, b) => (a.name.localeCompare(b.name) || a.id.localeCompare(b.id)));
 
-      // Sort by name then id for stable output
-      items.sort((a, b) => (a.name.localeCompare(b.name) || a.id.localeCompare(b.id)));
-      return { address, items } satisfies AddressItems;
-    })
-  );
-
-  return results;
+  // Return aggregated results
+  return [{
+    address: `Aggregated (${addresses.length} addresses)`,
+    items: aggregatedItems
+  }];
 }
