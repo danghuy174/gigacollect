@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  allowedDevOrigins: ['*.replit.dev'],
+  allowedDevOrigins: process.env.REPLIT_DOMAINS ? [process.env.REPLIT_DOMAINS] : [],
 };
 
 export default nextConfig;
