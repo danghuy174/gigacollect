@@ -161,22 +161,38 @@ export async function mapAddressesToItems(addresses: string[], offline = false):
   // Aggregate balances across all addresses
   const itemBalances = new Map<string, { totalBalance: number; itemId: string }>();
   
-  // Process all addresses to aggregate balances
-  for (const addrRaw of addresses) {
-    const address = addrRaw.trim();
-    if (!address) continue;
-
-    const playerResp = await fetchPlayerItems(address, offline);
+  // Process addresses in batches for better performance
+  const BATCH_SIZE = 10; // Process 10 addresses at a time
+  const validAddresses = addresses.map(addr => addr.trim()).filter(Boolean);
+  
+  for (let i = 0; i < validAddresses.length; i += BATCH_SIZE) {
+    const batch = validAddresses.slice(i, i + BATCH_SIZE);
     
-    for (const entity of playerResp.entities ?? []) {
-      const id = String((entity as RawEntity).ID_CID ?? "");
-      const balance = Number((entity as RawEntity).BALANCE_CID ?? 0);
-      if (!id) continue;
-      if (!Number.isFinite(balance) || balance <= 0) continue;
+    // Process batch in parallel
+    const batchPromises = batch.map(async (address) => {
+      try {
+        const playerResp = await fetchPlayerItems(address, offline);
+        return { address, entities: playerResp.entities ?? [] };
+      } catch (error) {
+        console.error(`Failed to fetch items for ${address}:`, error);
+        return { address, entities: [] };
+      }
+    });
+    
+    const batchResults = await Promise.all(batchPromises);
+    
+    // Aggregate results from batch
+    for (const { entities } of batchResults) {
+      for (const entity of entities) {
+        const id = String((entity as RawEntity).ID_CID ?? "");
+        const balance = Number((entity as RawEntity).BALANCE_CID ?? 0);
+        if (!id) continue;
+        if (!Number.isFinite(balance) || balance <= 0) continue;
 
-      const current = itemBalances.get(id) || { totalBalance: 0, itemId: id };
-      current.totalBalance += balance;
-      itemBalances.set(id, current);
+        const current = itemBalances.get(id) || { totalBalance: 0, itemId: id };
+        current.totalBalance += balance;
+        itemBalances.set(id, current);
+      }
     }
   }
 
@@ -193,33 +209,47 @@ export async function mapAddressesToItems(addresses: string[], offline = false):
   const aggregatedItems: MappedItem[] = [];
   const metadataCache = new Map<string, ItemMetadata | null>();
   
+  // First pass: create items without metadata for faster initial display
   for (const [itemId, { totalBalance }] of itemBalances) {
-    // Find the corresponding game item by docId matching (ID_CID in balance = docId in gameItem)
     const meta = gameItemsMap.get(itemId);
-    
     const name = String(meta?.NAME_CID ?? `Unknown #${itemId}`);
-    
-    // Debug log
-    console.log(`Item ${itemId}: NAME_CID=${meta?.NAME_CID}, _id=${meta?._id}`);
-    
-    // Fetch item metadata using the item's docId
-    let metadataItemId = itemId; // itemId is already the docId from balance
-    
-    // Use cache to avoid fetching same metadata multiple times
-    let itemMetadata = metadataCache.get(metadataItemId);
-    if (itemMetadata === undefined) {
-      itemMetadata = await fetchItemMetadata(metadataItemId, baseUri, offline);
-      metadataCache.set(metadataItemId, itemMetadata);
-    }
     
     aggregatedItems.push({
       id: itemId,
-      name: name, // Use NAME_CID from gameItem, not from metadata
+      name: name,
       balance: totalBalance,
-      image: itemMetadata?.image, // Use image field from metadata (higher resolution)
-      description: itemMetadata?.description,
-      attributes: itemMetadata?.attributes
+      image: undefined, // Will be loaded later
+      description: undefined,
+      attributes: undefined
     });
+  }
+  
+  // Second pass: fetch metadata in batches for better performance
+  const METADATA_BATCH_SIZE = 5;
+  for (let i = 0; i < aggregatedItems.length; i += METADATA_BATCH_SIZE) {
+    const batch = aggregatedItems.slice(i, i + METADATA_BATCH_SIZE);
+    
+    const metadataPromises = batch.map(async (item) => {
+      const metadataItemId = item.id;
+      
+      // Use cache to avoid fetching same metadata multiple times
+      let itemMetadata = metadataCache.get(metadataItemId);
+      if (itemMetadata === undefined) {
+        itemMetadata = await fetchItemMetadata(metadataItemId, baseUri, offline);
+        metadataCache.set(metadataItemId, itemMetadata);
+      }
+      
+      return { item, metadata: itemMetadata };
+    });
+    
+    const metadataResults = await Promise.all(metadataPromises);
+    
+    // Update items with metadata
+    for (const { item, metadata } of metadataResults) {
+      item.image = metadata?.image;
+      item.description = metadata?.description;
+      item.attributes = metadata?.attributes;
+    }
   }
 
   // Sort by name then id for stable output

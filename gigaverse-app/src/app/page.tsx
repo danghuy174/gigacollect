@@ -26,6 +26,7 @@ export default function Home() {
   const [results, setResults] = useState<ApiResponse["data"]>([]);
   const [offline, setOffline] = useState(false);
   const [searchText, setSearchText] = useState("");
+  const [progress, setProgress] = useState({ current: 0, total: 0, message: "" });
 
   const addresses = useMemo(
     () =>
@@ -53,6 +54,7 @@ export default function Home() {
   async function handleFetch() {
     setLoading(true);
     setError(null);
+    setProgress({ current: 0, total: addresses.length, message: "Đang xử lý..." });
     try {
       const res = await fetch("/api/items", {
         method: "POST",
@@ -62,11 +64,13 @@ export default function Home() {
       if (!res.ok) throw new Error(await res.text());
       const json = (await res.json()) as ApiResponse;
       setResults(json.data ?? []);
+      setProgress({ current: addresses.length, total: addresses.length, message: "Hoàn thành!" });
     } catch (e: any) {
       const message = e instanceof Error ? e.message : "Request failed";
       setError(message);
     } finally {
       setLoading(false);
+      setTimeout(() => setProgress({ current: 0, total: 0, message: "" }), 2000);
     }
   }
 
@@ -103,6 +107,21 @@ export default function Home() {
 
           {error && (
             <div className="mt-4 text-sm text-red-600">{error}</div>
+          )}
+
+          {loading && progress.total > 0 && (
+            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <div className="flex items-center justify-between text-sm mb-2">
+                <span>{progress.message}</span>
+                <span>{progress.current}/{progress.total}</span>
+              </div>
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${(progress.current / progress.total) * 100}%` }}
+                ></div>
+              </div>
+            </div>
           )}
 
           {results.length > 0 && (
