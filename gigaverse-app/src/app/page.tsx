@@ -30,7 +30,7 @@ export default function Home() {
     () =>
       addressesText
         .split(/\n|,|;|\s+/)
-        .map((s) => s.trim())
+        .map((s: string) => s.trim())
         .filter(Boolean),
     [addressesText]
   );
@@ -47,7 +47,7 @@ export default function Home() {
       if (!res.ok) throw new Error(await res.text());
       const json = (await res.json()) as ApiResponse;
       setResults(json.data ?? []);
-    } catch (e) {
+    } catch (e: any) {
       const message = e instanceof Error ? e.message : "Request failed";
       setError(message);
     } finally {
@@ -69,12 +69,12 @@ export default function Home() {
             className="w-full h-32 p-3 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             placeholder="0x123..., 0xabc..., ..."
             value={addressesText}
-            onChange={(e) => setAddressesText(e.target.value)}
+            onChange={(e: any) => setAddressesText(e.target.value)}
           />
 
           <div className="mt-3 flex items-center justify-between">
             <label className="inline-flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={offline} onChange={(e) => setOffline(e.target.checked)} />
+              <input type="checkbox" checked={offline} onChange={(e: any) => setOffline(e.target.checked)} />
               Dùng dữ liệu mẫu (offline)
             </label>
             <button
@@ -91,25 +91,25 @@ export default function Home() {
           )}
 
           <div className="mt-6 space-y-6">
-            {results.map(({ address, items }) => (
+            {results.map(({ address, items }: any) => (
               <div key={address} className="border border-gray-200 rounded-lg p-4 bg-white/70 dark:bg-black/40">
                 <div className="font-semibold text-sm break-all mb-4">{address}</div>
                 {items.length === 0 ? (
                   <div className="text-sm text-gray-600 mt-2">Không có items</div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {items.map((it) => (
-                      <div key={`${address}-${it.id}`} className="border border-gray-200 rounded-lg p-3 bg-white/50 dark:bg-black/30">
-                        <div className="flex items-start gap-3">
+                  <div className="space-y-2">
+                    {items.map((it: any) => (
+                      <div key={`${address}-${it.id}`} className="flex items-center justify-between p-3 bg-white/50 dark:bg-black/30 rounded-lg border border-gray-200">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
                           {it.image && (
                             <div className="flex-shrink-0">
                               <Image
                                 src={it.image}
                                 alt={it.name}
-                                width={60}
-                                height={60}
-                                className="rounded-lg object-cover"
-                                onError={(e) => {
+                                width={40}
+                                height={40}
+                                className="rounded object-cover"
+                                onError={(e: any) => {
                                   const target = e.target as HTMLImageElement;
                                   target.style.display = 'none';
                                 }}
@@ -118,21 +118,18 @@ export default function Home() {
                           )}
                           <div className="flex-1 min-w-0">
                             <div className="font-medium text-sm truncate">{it.name}</div>
-                            <div className="text-lg font-bold text-blue-600">x{it.balance.toLocaleString()}</div>
                             <div className="text-xs text-gray-500">ID: {it.id}</div>
                             {it.description && (
-                              <div className="text-xs text-gray-600 mt-1 line-clamp-2">{it.description}</div>
+                              <div className="text-xs text-gray-600 mt-1 truncate">{it.description}</div>
                             )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-blue-600">x{it.balance.toLocaleString()}</div>
                             {it.attributes && it.attributes.length > 0 && (
-                              <div className="mt-2 flex flex-wrap gap-1">
-                                {it.attributes.slice(0, 3).map((attr, idx) => (
-                                  <span key={idx} className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                                    {attr.trait_type}: {attr.value}
-                                  </span>
-                                ))}
-                                {it.attributes.length > 3 && (
-                                  <span className="text-xs text-gray-500">+{it.attributes.length - 3} more</span>
-                                )}
+                              <div className="text-xs text-gray-500">
+                                {it.attributes.find((attr: any) => attr.trait_type === 'Rarity')?.value || 'Common'}
                               </div>
                             )}
                           </div>

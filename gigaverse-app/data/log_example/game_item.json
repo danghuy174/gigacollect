@@ -1,4 +1,6 @@
-{
+request = https://gigaverse.io/api/indexer/gameitems
+
+payload = {
     "entities": [
         {
             "_id": "67a82249c4ce2c6638fa9387",

@@ -1,4 +1,4 @@
-import path from "path";
+import * as path from "path";
 import { readFile } from "fs/promises";
 
 export type RawEntity = {
@@ -134,30 +134,9 @@ export async function fetchPlayerItems(address: string, offline = false): Promis
 }
 
 export async function mapAddressesToItems(addresses: string[], offline = false): Promise<AddressItems[]> {
+  // Fetch game items once (shared across all addresses)
   const gameItemsMap = await fetchGameItems(offline);
   
-  // Aggregate balances across all addresses
-  const itemBalances = new Map<string, { totalBalance: number; itemId: string }>();
-  
-  // Process all addresses to aggregate balances
-  for (const addrRaw of addresses) {
-    const address = addrRaw.trim();
-    if (!address) continue;
-
-    const playerResp = await fetchPlayerItems(address, offline);
-    
-    for (const entity of playerResp.entities ?? []) {
-      const id = String((entity as RawEntity).ID_CID ?? "");
-      const balance = Number((entity as RawEntity).BALANCE_CID ?? 0);
-      if (!id) continue;
-      if (!Number.isFinite(balance) || balance <= 0) continue;
-
-      const current = itemBalances.get(id) || { totalBalance: 0, itemId: id };
-      current.totalBalance += balance;
-      itemBalances.set(id, current);
-    }
-  }
-
   // Get base URI from game items (look for the contract item with docId "0")
   let baseUri = "https://gigaverse.io/api/metadata/gameItem/";
   for (const [key, entity] of gameItemsMap) {
@@ -167,45 +146,59 @@ export async function mapAddressesToItems(addresses: string[], offline = false):
     }
   }
   
-  // Create aggregated items with metadata
-  const aggregatedItems: MappedItem[] = [];
+  // Process each address separately to show all individual items
+  const results: AddressItems[] = [];
   
-  for (const [itemId, { totalBalance }] of itemBalances) {
-    // Find the corresponding game item by ID_CID matching
-    let meta: RawEntity | undefined;
-    for (const [key, entity] of gameItemsMap) {
-      if (entity.ID_CID === itemId || entity.docId === itemId) {
-        meta = entity;
-        break;
+  for (const addrRaw of addresses) {
+    const address = addrRaw.trim();
+    if (!address) continue;
+
+    const playerResp = await fetchPlayerItems(address, offline);
+    const items: MappedItem[] = [];
+
+    for (const entity of playerResp.entities ?? []) {
+      const id = String((entity as RawEntity).ID_CID ?? "");
+      const balance = Number((entity as RawEntity).BALANCE_CID ?? 0);
+      if (!id) continue;
+      if (!Number.isFinite(balance) || balance <= 0) continue;
+
+      // Find the corresponding game item by ID_CID matching
+      let meta: RawEntity | undefined;
+      for (const [key, entity] of gameItemsMap) {
+        if (entity.ID_CID === id || entity.docId === id) {
+          meta = entity;
+          break;
+        }
       }
+      
+      const name = String(meta?.NAME_CID ?? `Unknown #${id}`);
+      
+      // Fetch item metadata using the item's _id
+      let metadataItemId = id;
+      if (meta && meta._id) {
+        metadataItemId = String(meta._id);
+      }
+      
+      const itemMetadata = await fetchItemMetadata(metadataItemId, baseUri, offline);
+      
+      items.push({
+        id: id,
+        name: itemMetadata?.name || name,
+        balance: balance,
+        image: itemMetadata?.image,
+        description: itemMetadata?.description,
+        attributes: itemMetadata?.attributes
+      });
     }
+
+    // Sort by name then id for stable output
+    items.sort((a, b) => (a.name.localeCompare(b.name) || a.id.localeCompare(b.id)));
     
-    const name = String(meta?.NAME_CID ?? `Unknown #${itemId}`);
-    
-    // Fetch item metadata using the item's _id
-    let metadataItemId = itemId;
-    if (meta && meta._id) {
-      metadataItemId = String(meta._id);
-    }
-    
-    const itemMetadata = await fetchItemMetadata(metadataItemId, baseUri, offline);
-    
-    aggregatedItems.push({
-      id: itemId,
-      name: itemMetadata?.name || name,
-      balance: totalBalance,
-      image: itemMetadata?.image,
-      description: itemMetadata?.description,
-      attributes: itemMetadata?.attributes
+    results.push({
+      address: address,
+      items: items
     });
   }
 
-  // Sort by name then id for stable output
-  aggregatedItems.sort((a, b) => (a.name.localeCompare(b.name) || a.id.localeCompare(b.id)));
-
-  // Return aggregated results
-  return [{
-    address: `Aggregated (${addresses.length} addresses)`,
-    items: aggregatedItems
-  }];
+  return results;
 }

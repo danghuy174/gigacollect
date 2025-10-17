@@ -1,7 +1,7 @@
 
-https://gigaverse.io/api/importexport/balances/0xedd103d303e2a93751ea6b103558aabf8e30b091
+request = https://gigaverse.io/api/importexport/balances/0xedd103d303e2a93751ea6b103558aabf8e30b091
 
-{
+payload = {
     "entities": [
       {
         "ID_CID": "78",
