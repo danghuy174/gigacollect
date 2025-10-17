@@ -1,7 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'jade-decent-lizard-287.mypinata.cloud',
+      },
+    ],
+  },
+  allowedDevOrigins: ['*.replit.dev'],
 };
 
 export default nextConfig;
