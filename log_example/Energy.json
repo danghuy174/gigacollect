@@ -1,0 +1,25 @@
+Resquest: https://gigaverse.io/api/offchain/player/energy/0xEdD103d303E2a93751eA6b103558AaBF8E30b091
+
+Response: 
+{
+    "entities": [
+        {
+            "_id": "67ad533553fa220139e85b71",
+            "docId": "Player#0xedd103d303e2a93751ea6b103558aabf8e30b091",
+            "createdAt": "2025-02-13T02:04:37.456Z",
+            "updatedAt": "2025-10-15T23:31:07.665Z",
+            "ENERGY_CID": 43894396314,
+            "TIMESTAMP_CID": 1760571067,
+            "__v": 0,
+            "parsedData": {
+                "energy": 215427681618,
+                "energyValue": 215,
+                "maxEnergy": 240,
+                "regenPerSecond": 2777777,
+                "regenPerHour": 10,
+                "secondsSinceLastUpdate": 61752,
+                "isPlayerJuiced": false
+            }
+        }
+    ]
+}

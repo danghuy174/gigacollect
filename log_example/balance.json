@@ -1,0 +1,173 @@
+{
+    "entities": [
+        {
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "ID_CID": "2",
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-2",
+            "BALANCE_CID": 2873
+        },
+        {
+            "ID_CID": "4",
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-4",
+            "BALANCE_CID": 232
+        },
+        {
+            "ID_CID": "5",
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-5",
+            "BALANCE_CID": 487
+        },
+        {
+            "ID_CID": "3",
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-3",
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "BALANCE_CID": 950
+        },
+        {
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-7",
+            "ID_CID": "7",
+            "BALANCE_CID": 174
+        },
+        {
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "ID_CID": "14",
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-14",
+            "BALANCE_CID": 4
+        },
+        {
+            "ID_CID": "21",
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-21",
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "BALANCE_CID": 7
+        },
+        {
+            "ID_CID": "18",
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-18",
+            "BALANCE_CID": 1
+        },
+        {
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-15",
+            "ID_CID": "15",
+            "BALANCE_CID": 1
+        },
+        {
+            "ID_CID": "67",
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-67",
+            "BALANCE_CID": 0
+        },
+        {
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-13",
+            "ID_CID": "13",
+            "BALANCE_CID": 0
+        },
+        {
+            "ID_CID": "6",
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-6",
+            "BALANCE_CID": 58
+        },
+        {
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-69",
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "ID_CID": "69",
+            "BALANCE_CID": 0
+        },
+        {
+            "ID_CID": "71",
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-71",
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "BALANCE_CID": 0
+        },
+        {
+            "ID_CID": "12",
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-12",
+            "BALANCE_CID": 0
+        },
+        {
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "ID_CID": "217",
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-217",
+            "BALANCE_CID": 3
+        },
+        {
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "ID_CID": "17",
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-17",
+            "BALANCE_CID": 1
+        },
+        {
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-270",
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "ID_CID": "270",
+            "BALANCE_CID": 2
+        },
+        {
+            "ID_CID": "9",
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-9",
+            "BALANCE_CID": 1
+        },
+        {
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-70",
+            "ID_CID": "70",
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "BALANCE_CID": 1
+        },
+        {
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-94",
+            "ID_CID": "94",
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "BALANCE_CID": 1
+        },
+        {
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-573",
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "ID_CID": "573",
+            "BALANCE_CID": 2
+        },
+        {
+            "ID_CID": "272",
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-272",
+            "BALANCE_CID": 2
+        },
+        {
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-264",
+            "ID_CID": "264",
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "BALANCE_CID": 1
+        },
+        {
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-373_wk40",
+            "WEEK_CID": 40,
+            "ID_CID": "373",
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "BALANCE_CID": 250
+        },
+        {
+            "ID_CID": "262",
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-262",
+            "BALANCE_CID": 1
+        },
+        {
+            "ID_CID": "266",
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-266",
+            "BALANCE_CID": 1
+        },
+        {
+            "docId": "PlayerGameItemBalance#0xccc3f874b0978114420332660a6e498dc07e5e7b-265",
+            "ID_CID": "265",
+            "PLAYER_CID": "0xccc3f874b0978114420332660a6e498dc07e5e7b",
+            "BALANCE_CID": 1
+        }
+    ]
+}
