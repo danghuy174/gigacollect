@@ -9,7 +9,16 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  allowedDevOrigins: process.env.REPLIT_DOMAINS ? [process.env.REPLIT_DOMAINS] : [],
+  allowedDevOrigins: process.env.REPLIT_DOMAINS 
+    ? process.env.REPLIT_DOMAINS.split(',').map(domain => `https://${domain}`)
+    : [],
+  webpack: (config) => {
+    config.watchOptions = {
+      poll: 1000,
+      aggregateTimeout: 300,
+    };
+    return config;
+  },
 };
 
 export default nextConfig;
