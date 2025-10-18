@@ -33,6 +33,7 @@ export default function Home() {
   const [searchText, setSearchText] = useState("");
   const [progress, setProgress] = useState({ current: 0, total: 0, message: "" });
   const [energies, setEnergies] = useState<Record<string, EnergyInfo | { error: string }>>({});
+  const [activeTab, setActiveTab] = useState<'items' | 'energy'>("items");
 
   const addresses = useMemo(
     () =>
@@ -165,116 +166,150 @@ export default function Home() {
             </div>
           )}
 
-          {results.length > 0 && (
+          {(addresses.length > 0) && (
             <div className="mt-4">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium">Tìm kiếm items:</label>
-                {searchText && (
-                  <button
-                    onClick={() => setSearchText("")}
-                    className="text-xs text-gray-400 hover:text-gray-200"
-                  >
-                    Xóa bộ lọc
-                  </button>
-                )}
+              <div className="inline-flex rounded-lg overflow-hidden border border-white/10 bg-black/30">
+                <button
+                  className={`px-4 py-2 text-sm transition ${activeTab === 'items' ? 'bg-violet-600 text-white' : 'text-gray-300 hover:bg-white/5'}`}
+                  onClick={() => setActiveTab('items')}
+                >
+                  Items
+                </button>
+                <button
+                  className={`px-4 py-2 text-sm transition border-l border-white/10 ${activeTab === 'energy' ? 'bg-violet-600 text-white' : 'text-gray-300 hover:bg-white/5'}`}
+                  onClick={() => setActiveTab('energy')}
+                >
+                  Năng lượng
+                </button>
               </div>
-              <input
-                type="text"
-                className="w-full p-3 rounded border border-gray-700/40 bg-black/30 text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
-                placeholder="Tìm theo tên, ID, hoặc mô tả..."
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-              />
-              {searchText && (
-                <div className="mt-2 text-xs text-gray-400">
-                  Tìm thấy {filteredResults.reduce((total, result) => total + result.items.length, 0)} items
+            </div>
+          )}
+
+          {activeTab === 'items' && (
+            <>
+              {results.length > 0 && (
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium">Tìm kiếm items:</label>
+                    {searchText && (
+                      <button
+                        onClick={() => setSearchText("")}
+                        className="text-xs text-gray-400 hover:text-gray-200"
+                      >
+                        Xóa bộ lọc
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    className="w-full p-3 rounded border border-gray-700/40 bg-black/30 text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                    placeholder="Tìm theo tên, ID, hoặc mô tả..."
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                  />
+                  {searchText && (
+                    <div className="mt-2 text-xs text-gray-400">
+                      Tìm thấy {filteredResults.reduce((total, result) => total + result.items.length, 0)} items
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
-          )}
 
-          {/* Energy per address */}
-          {!offline && addresses.length > 0 && (
-            <div className="mt-6 space-y-3">
-              <div className="text-sm font-medium text-gray-200">Năng lượng</div>
-              {addresses.map((addr) => {
-                const energy = energies[addr] as EnergyInfo | { error: string } | undefined;
-                const value = (energy && "energyValue" in energy) ? energy.energyValue : 0;
-                const max = (energy && "maxEnergy" in energy) ? energy.maxEnergy : 0;
-                const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
-                return (
-                  <div key={`energy-${addr}`} className="rounded-lg p-3 bg-black/30 border border-white/10">
-                    <div className="flex items-center justify-between mb-2 text-xs text-gray-300">
-                      <span className="truncate mr-2">{addr}</span>
-                      {energy && "error" in energy ? (
-                        <span className="text-red-400">Lỗi tải năng lượng</span>
-                      ) : (
-                        <span className="neon-number">{value}/{max}</span>
-                      )}
-                    </div>
-                    <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
-                      <div
-                        className="h-2 rounded-full transition-all duration-500 bg-cyan-500"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          <div className="mt-6 space-y-6">
-            {filteredResults.map(({ address, items }) => (
-              <div key={address} className="rounded-lg p-4 bg-black/30 border border-white/10">
-                <div className="font-semibold text-sm break-all mb-4 text-gray-300">{address}</div>
-                {items.length === 0 ? (
-                  <div className="text-sm text-gray-400 mt-2">Không có items</div>
-                ) : (
-                  <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
-                    {items.map((it) => (
-                      <div key={`${address}-${it.id}`} className="flex items-center justify-between p-3 bg-black/40 rounded-lg border border-white/10">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          {it.image && (
-                            <div className="flex-shrink-0">
-                              <Image
-                                src={it.image}
-                                alt={it.name}
-                                width={40}
-                                height={40}
-                                className="rounded object-cover"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.style.display = 'none';
-                                }}
-                              />
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-sm truncate">{it.name}</div>
-                            <div className="text-xs text-gray-500">ID: {it.id}</div>
-                            {it.description && (
-                              <div className="text-xs text-gray-600 mt-1 truncate">{it.description}</div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="text-right">
-                            <div className="text-lg font-bold neon-number">x{it.balance.toLocaleString()}</div>
-                            {it.attributes && it.attributes.length > 0 && (
-                              <div className="text-xs text-gray-400">
-                                {it.attributes.find((attr) => attr.trait_type === 'Rarity')?.value || 'Common'}
+              <div className="mt-6 space-y-6">
+                {filteredResults.map(({ address, items }) => (
+                  <div key={address} className="rounded-lg p-4 bg-black/30 border border-white/10">
+                    <div className="font-semibold text-sm break-all mb-4 text-gray-300">{address}</div>
+                    {items.length === 0 ? (
+                      <div className="text-sm text-gray-400 mt-2">Không có items</div>
+                    ) : (
+                      <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                        {items.map((it) => (
+                          <div key={`${address}-${it.id}`} className="flex items-center justify-between p-3 bg-black/40 rounded-lg border border-white/10">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              {it.image && (
+                                <div className="flex-shrink-0">
+                                  <Image
+                                    src={it.image}
+                                    alt={it.name}
+                                    width={40}
+                                    height={40}
+                                    className="rounded object-cover"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
+                                    }}
+                                  />
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-sm truncate">{it.name}</div>
+                                <div className="text-xs text-gray-500">ID: {it.id}</div>
+                                {it.description && (
+                                  <div className="text-xs text-gray-600 mt-1 truncate">{it.description}</div>
+                                )}
                               </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <div className="text-right">
+                                <div className="text-lg font-bold neon-number">x{it.balance.toLocaleString()}</div>
+                                {it.attributes && it.attributes.length > 0 && (
+                                  <div className="text-xs text-gray-400">
+                                    {it.attributes.find((attr) => attr.trait_type === 'Rarity')?.value || 'Common'}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {activeTab === 'energy' && (
+            <>
+              {offline && addresses.length > 0 && (
+                <div className="mt-6 text-sm text-gray-400">
+                  Năng lượng không khả dụng ở chế độ offline.
+                </div>
+              )}
+
+              {!offline && addresses.length > 0 && (
+                <div className="mt-6">
+                  <div className="text-sm font-medium text-gray-200 mb-2">Năng lượng</div>
+                  <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                    {addresses.map((addr) => {
+                      const energy = energies[addr] as EnergyInfo | { error: string } | undefined;
+                      const value = (energy && "energyValue" in energy) ? energy.energyValue : 0;
+                      const max = (energy && "maxEnergy" in energy) ? energy.maxEnergy : 0;
+                      const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
+                      return (
+                        <div key={`energy-${addr}`} className="rounded-lg p-3 bg-black/30 border border-white/10">
+                          <div className="flex items-center justify-between mb-2 text-xs text-gray-300">
+                            <span className="truncate mr-2">{addr}</span>
+                            {energy && "error" in energy ? (
+                              <span className="text-red-400">Lỗi tải năng lượng</span>
+                            ) : (
+                              <span className="neon-number">{value}/{max}</span>
                             )}
                           </div>
+                          <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
+                            <div
+                              className="h-2 rounded-full transition-all duration-500 bg-cyan-500"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>
