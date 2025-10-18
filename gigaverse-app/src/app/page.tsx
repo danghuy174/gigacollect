@@ -19,6 +19,11 @@ type ApiResponse = {
   }>;
 };
 
+type EnergyInfo = {
+  energyValue: number;
+  maxEnergy: number;
+};
+
 export default function Home() {
   const [addressesText, setAddressesText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,6 +32,7 @@ export default function Home() {
   const [offline, setOffline] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [progress, setProgress] = useState({ current: 0, total: 0, message: "" });
+  const [energies, setEnergies] = useState<Record<string, EnergyInfo | { error: string }>>({});
 
   const addresses = useMemo(
     () =>
@@ -54,8 +60,36 @@ export default function Home() {
   async function handleFetch() {
     setLoading(true);
     setError(null);
-    setProgress({ current: 0, total: addresses.length, message: "Đang xử lý..." });
-    try {
+    setEnergies({});
+
+    // We'll track progress for each address energy + 1 step for items aggregation
+    const totalSteps = (addresses.length > 0 ? addresses.length : 1) + 1;
+    setProgress({ current: 0, total: totalSteps, message: "Đang xử lý..." });
+
+    // Kick off energy fetches per address (skip in offline mode)
+    const energyPromises = offline
+      ? []
+      : addresses.map(async (addr) => {
+          try {
+            const res = await fetch(`/api/energy/${addr}`, { cache: "no-store" });
+            if (!res.ok) throw new Error(`Energy HTTP ${res.status}`);
+            const json = (await res.json()) as {
+              entities?: Array<{ parsedData?: { energyValue?: number; maxEnergy?: number } }>
+            };
+            const entity = json.entities?.[0];
+            const energyValue = Number(entity?.parsedData?.energyValue ?? 0);
+            const maxEnergy = Number(entity?.parsedData?.maxEnergy ?? 0);
+            setEnergies((prev) => ({ ...prev, [addr]: { energyValue, maxEnergy } }));
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : "Energy load failed";
+            setEnergies((prev) => ({ ...prev, [addr]: { error: msg } }));
+          } finally {
+            setProgress((p) => ({ ...p, current: Math.min(p.current + 1, totalSteps) }));
+          }
+        });
+
+    // Kick off items fetch in parallel
+    const itemsPromise = (async () => {
       const res = await fetch("/api/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -64,7 +98,11 @@ export default function Home() {
       if (!res.ok) throw new Error(await res.text());
       const json = (await res.json()) as ApiResponse;
       setResults(json.data ?? []);
-      setProgress({ current: addresses.length, total: addresses.length, message: "Hoàn thành!" });
+      setProgress((p) => ({ ...p, current: energyPromises.length === 0 ? totalSteps : Math.min(p.current + 1, totalSteps), message: "Hoàn thành!" }));
+    })();
+
+    try {
+      await Promise.allSettled([itemsPromise, Promise.allSettled(energyPromises)]);
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Request failed";
       setError(message);
@@ -76,16 +114,19 @@ export default function Home() {
 
   return (
     <div className="min-h-screen w-full bg-cover bg-center" style={{ backgroundImage: 'url(/main-background.png)' }}>
-      <div className="mx-auto max-w-4xl px-6 py-10">
-        <div className="bg-white/80 dark:bg-black/50 backdrop-blur rounded-xl p-6 shadow">
-          <div className="flex items-center gap-3 mb-4">
-            <Image src="/next.svg" alt="Logo" width={120} height={26} />
-            <h1 className="text-xl font-semibold">Gigaverse Item Lookup</h1>
+      <div className="mx-auto max-w-5xl px-6 py-10">
+        <div className="glass-card rounded-2xl p-6 shadow-xl">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <Image src="/globe.svg" alt="Gigaverse" width={36} height={36} />
+              <h1 className="text-2xl font-semibold neon-text">Gigaverse Item Lookup</h1>
+            </div>
+            <div className="text-xs text-gray-400">v2</div>
           </div>
 
           <label className="block text-sm font-medium mb-2">Nhập địa chỉ (cách nhau bằng dấu phẩy, dòng mới...)</label>
           <textarea
-            className="w-full h-32 p-3 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            className="w-full h-32 p-3 rounded border border-gray-700/40 bg-black/30 text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
             placeholder="0x123..., 0xabc..., ..."
             value={addressesText}
             onChange={(e) => setAddressesText(e.target.value)}
@@ -99,9 +140,9 @@ export default function Home() {
             <button
               onClick={handleFetch}
               disabled={!addresses.length || loading}
-              className="px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-50"
+              className="px-4 py-2 rounded bg-violet-600 hover:bg-violet-500 transition text-white disabled:opacity-50"
             >
-              {loading ? "Đang lấy..." : "Lấy items"}
+              {loading ? "Đang lấy..." : "Lấy Item"}
             </button>
           </div>
 
@@ -109,16 +150,16 @@ export default function Home() {
             <div className="mt-4 text-sm text-red-600">{error}</div>
           )}
 
-          {loading && progress.total > 0 && (
-            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <div className="flex items-center justify-between text-sm mb-2">
-                <span>{progress.message}</span>
-                <span>{progress.current}/{progress.total}</span>
+          {progress.total > 0 && (
+            <div className="mt-4 p-3 bg-black/30 rounded-lg border border-white/10">
+              <div className="flex items-center justify-between text-sm mb-2 text-gray-300">
+                <span>{loading ? progress.message : ""}</span>
+                <span className="neon-number">{progress.current}/{progress.total}</span>
               </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
                 <div 
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${(progress.current / progress.total) * 100}%` }}
+                  className={`h-2 rounded-full transition-all duration-500 ${loading ? "bg-emerald-500" : "bg-violet-500"}`}
+                  style={{ width: `${progress.total === 0 ? 0 : (progress.current / progress.total) * 100}%` }}
                 ></div>
               </div>
             </div>
@@ -131,7 +172,7 @@ export default function Home() {
                 {searchText && (
                   <button
                     onClick={() => setSearchText("")}
-                    className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                    className="text-xs text-gray-400 hover:text-gray-200"
                   >
                     Xóa bộ lọc
                   </button>
@@ -139,29 +180,60 @@ export default function Home() {
               </div>
               <input
                 type="text"
-                className="w-full p-3 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full p-3 rounded border border-gray-700/40 bg-black/30 text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
                 placeholder="Tìm theo tên, ID, hoặc mô tả..."
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
               />
               {searchText && (
-                <div className="mt-2 text-xs text-gray-600">
+                <div className="mt-2 text-xs text-gray-400">
                   Tìm thấy {filteredResults.reduce((total, result) => total + result.items.length, 0)} items
                 </div>
               )}
             </div>
           )}
 
+          {/* Energy per address */}
+          {!offline && addresses.length > 0 && (
+            <div className="mt-6 space-y-3">
+              <div className="text-sm font-medium text-gray-200">Năng lượng</div>
+              {addresses.map((addr) => {
+                const energy = energies[addr] as EnergyInfo | { error: string } | undefined;
+                const value = (energy && "energyValue" in energy) ? energy.energyValue : 0;
+                const max = (energy && "maxEnergy" in energy) ? energy.maxEnergy : 0;
+                const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
+                return (
+                  <div key={`energy-${addr}`} className="rounded-lg p-3 bg-black/30 border border-white/10">
+                    <div className="flex items-center justify-between mb-2 text-xs text-gray-300">
+                      <span className="truncate mr-2">{addr}</span>
+                      {energy && "error" in energy ? (
+                        <span className="text-red-400">Lỗi tải năng lượng</span>
+                      ) : (
+                        <span className="neon-number">{value}/{max}</span>
+                      )}
+                    </div>
+                    <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
+                      <div
+                        className="h-2 rounded-full transition-all duration-500 bg-cyan-500"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           <div className="mt-6 space-y-6">
             {filteredResults.map(({ address, items }) => (
-              <div key={address} className="border border-gray-200 rounded-lg p-4 bg-white/70 dark:bg-black/40">
-                <div className="font-semibold text-sm break-all mb-4">{address}</div>
+              <div key={address} className="rounded-lg p-4 bg-black/30 border border-white/10">
+                <div className="font-semibold text-sm break-all mb-4 text-gray-300">{address}</div>
                 {items.length === 0 ? (
-                  <div className="text-sm text-gray-600 mt-2">Không có items</div>
+                  <div className="text-sm text-gray-400 mt-2">Không có items</div>
                 ) : (
                   <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                     {items.map((it) => (
-                      <div key={`${address}-${it.id}`} className="flex items-center justify-between p-3 bg-white/50 dark:bg-black/30 rounded-lg border border-gray-200">
+                      <div key={`${address}-${it.id}`} className="flex items-center justify-between p-3 bg-black/40 rounded-lg border border-white/10">
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           {it.image && (
                             <div className="flex-shrink-0">
@@ -188,9 +260,9 @@ export default function Home() {
                         </div>
                         <div className="flex items-center gap-4">
                           <div className="text-right">
-                            <div className="text-lg font-bold text-blue-600">x{it.balance.toLocaleString()}</div>
+                            <div className="text-lg font-bold neon-number">x{it.balance.toLocaleString()}</div>
                             {it.attributes && it.attributes.length > 0 && (
-                              <div className="text-xs text-gray-500">
+                              <div className="text-xs text-gray-400">
                                 {it.attributes.find((attr) => attr.trait_type === 'Rarity')?.value || 'Common'}
                               </div>
                             )}

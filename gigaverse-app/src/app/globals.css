@@ -10,6 +10,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-orbitron);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,7 +23,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-display), var(--font-geist-sans), system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
 }
 
 .line-clamp-2 {
@@ -62,4 +63,27 @@ body {
 
 .dark .overflow-y-auto::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.5);
+}
+
+/* Neon styling helpers */
+.neon-text {
+  color: #a78bfa; /* violet-400 */
+  text-shadow:
+    0 0 2px rgba(167, 139, 250, 0.6),
+    0 0 8px rgba(167, 139, 250, 0.8),
+    0 0 14px rgba(167, 139, 250, 0.9);
+}
+
+.neon-number {
+  color: #f59e0b; /* amber-500 */
+  text-shadow:
+    0 0 2px rgba(245, 158, 11, 0.5),
+    0 0 8px rgba(245, 158, 11, 0.7);
+}
+
+.glass-card {
+  background: rgba(17, 24, 39, 0.4); /* slate-900/40 */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }

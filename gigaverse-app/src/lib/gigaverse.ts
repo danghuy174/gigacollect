@@ -37,6 +37,35 @@ export type AddressItems = {
   items: MappedItem[];
 };
 
+export type EnergyResponse = {
+  entities?: Array<{
+    parsedData?: {
+      energy?: number;
+      energyValue?: number;
+      maxEnergy?: number;
+      regenPerSecond?: number;
+      regenPerHour?: number;
+      secondsSinceLastUpdate?: number;
+      isPlayerJuiced?: boolean;
+    };
+  }>;
+};
+
+export async function fetchPlayerEnergy(address: string): Promise<{ energyValue: number; maxEnergy: number } | null> {
+  try {
+    const res = await fetch(`https://gigaverse.io/api/offchain/player/energy/${address}`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = (await res.json()) as EnergyResponse;
+    const entity = json.entities?.[0];
+    const energyValue = Number(entity?.parsedData?.energyValue ?? 0);
+    const maxEnergy = Number(entity?.parsedData?.maxEnergy ?? 0);
+    if (!Number.isFinite(energyValue) || !Number.isFinite(maxEnergy)) return null;
+    return { energyValue, maxEnergy };
+  } catch {
+    return null;
+  }
+}
+
 async function readJsonFromFile<T = unknown>(relativeFilePath: string): Promise<T> {
   const filePath = path.join(process.cwd(), relativeFilePath);
   const content = await readFile(filePath, "utf8");
