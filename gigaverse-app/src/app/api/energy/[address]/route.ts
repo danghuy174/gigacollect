@@ -4,9 +4,9 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { address: string } }
+  { params }: { params: Promise<{ address: string }> }
 ) {
-  const address = params.address;
+  const { address } = await params;
   if (!address || typeof address !== "string") {
     return NextResponse.json({ error: "address required" }, { status: 400 });
   }
@@ -24,7 +24,7 @@ export async function GET(
       status: 200,
       headers: { "content-type": "application/json" },
     });
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: "Failed to fetch energy" }, { status: 500 });
   }
 }
