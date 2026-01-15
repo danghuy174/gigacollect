@@ -47,14 +47,17 @@ export default function Home() {
   const [progress, setProgress] = useState({ current: 0, total: 0, message: "" });
   const [energies, setEnergies] = useState<Record<string, EnergyInfo | { error: string }>>({});
   const [ethBalances, setEthBalances] = useState<EthBalanceData | null>(null);
+  const [ethError, setEthError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'items' | 'energy' | 'eth'>("items");
 
   const addresses = useMemo(
-    () =>
-      addressesText
+    () => {
+      const raw = addressesText
         .split(/\n|,|;|\s+/)
-        .map((s: string) => s.trim())
-        .filter(Boolean),
+        .map((s: string) => s.trim().toLowerCase())
+        .filter(Boolean);
+      return [...new Set(raw)];
+    },
     [addressesText]
   );
 
@@ -77,6 +80,7 @@ export default function Home() {
     setError(null);
     setEnergies({});
     setEthBalances(null);
+    setEthError(null);
 
     // We'll track progress for each address energy + 1 step for items + 1 step for ETH balance
     const totalSteps = (addresses.length > 0 ? addresses.length : 1) + 2;
@@ -129,9 +133,17 @@ export default function Home() {
             });
             if (!res.ok) throw new Error(`ETH Balance HTTP ${res.status}`);
             const json = (await res.json()) as { data: EthBalanceData };
-            setEthBalances(json.data);
+            if (json.data.wallets.length === 0) {
+              setEthError("Không thể lấy ETH balance cho các địa chỉ này");
+            } else if (json.data.wallets.length < addresses.length) {
+              setEthError(`Chỉ lấy được ${json.data.wallets.length}/${addresses.length} ví`);
+              setEthBalances(json.data);
+            } else {
+              setEthBalances(json.data);
+            }
           } catch (err: unknown) {
-            console.error("Failed to fetch ETH balances:", err);
+            const msg = err instanceof Error ? err.message : "Lỗi khi lấy ETH balance";
+            setEthError(msg);
           } finally {
             setProgress((p) => ({ ...p, current: Math.min(p.current + 1, totalSteps), message: "Hoàn thành!" }));
           }
@@ -362,6 +374,12 @@ export default function Home() {
 
               {!offline && addresses.length > 0 && (
                 <div className="mt-6">
+                  {ethError && (
+                    <div className="mb-4 p-3 rounded-lg bg-red-900/30 border border-red-500/30 text-red-400 text-sm">
+                      {ethError}
+                    </div>
+                  )}
+                  
                   {ethBalances && (
                     <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-violet-900/50 to-cyan-900/50 border border-white/20">
                       <div className="text-sm font-medium text-gray-300 mb-2">Tổng cộng ({ethBalances.wallets.length} ví)</div>

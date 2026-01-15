@@ -101,10 +101,10 @@ export async function fetchMultipleEthBalances(addresses: string[]): Promise<{
   totalUsd: number;
   ethPriceUsd: number;
 }> {
-  const validAddresses = addresses.map(addr => addr.trim()).filter(Boolean);
+  const validAddresses = [...new Set(addresses.map(addr => addr.trim().toLowerCase()).filter(Boolean))];
   const BATCH_SIZE = 10;
   const wallets: WalletEthBalance[] = [];
-  let ethPriceUsd = 0;
+  let latestEthPrice = 0;
 
   for (let i = 0; i < validAddresses.length; i += BATCH_SIZE) {
     const batch = validAddresses.slice(i, i + BATCH_SIZE);
@@ -116,7 +116,7 @@ export async function fetchMultipleEthBalances(addresses: string[]): Promise<{
         const ethBalance = parseFloat(json.ethBalance);
         const price = parseFloat(json.ethPriceUsd);
         if (!Number.isFinite(ethBalance) || !Number.isFinite(price)) return null;
-        if (ethPriceUsd === 0) ethPriceUsd = price;
+        latestEthPrice = price;
         return {
           address,
           ethBalance,
@@ -133,9 +133,9 @@ export async function fetchMultipleEthBalances(addresses: string[]): Promise<{
   }
 
   const totalEth = wallets.reduce((sum, w) => sum + w.ethBalance, 0);
-  const totalUsd = wallets.reduce((sum, w) => sum + w.ethBalanceUsd, 0);
+  const totalUsd = latestEthPrice > 0 ? totalEth * latestEthPrice : wallets.reduce((sum, w) => sum + w.ethBalanceUsd, 0);
 
-  return { wallets, totalEth, totalUsd, ethPriceUsd };
+  return { wallets, totalEth, totalUsd, ethPriceUsd: latestEthPrice };
 }
 
 async function readJsonFromFile<T = unknown>(relativeFilePath: string): Promise<T> {
