@@ -88,6 +88,7 @@ Preferred communication style: Simple, everyday language.
      - `/indexer/player/gameitems/[address]` - Player game items
      - `/importexport/balances/[address]` - Player balances
      - `/metadata/gameItem/[id]` - Item metadata
+     - `/marketplace/eth/player/[address]` - ETH balance and USD price
    - Data Format: JSON with blockchain-indexed data using CID fields
 
 **NPM Dependencies**:
@@ -109,6 +110,20 @@ Preferred communication style: Simple, everyday language.
 - **Hot Reload**: Next.js development server with auto-update on file changes
 
 ## Recent Changes
+
+### January 15, 2026 - ETH Balance Feature
+Added new feature to display ETH balance for each wallet address:
+
+1. **New API Route**: `/api/eth-balance` - POST endpoint to fetch ETH balances for multiple addresses
+2. **Backend Functions**: Added `fetchEthBalance` and `fetchMultipleEthBalances` functions in gigaverse.ts
+3. **Frontend Tab**: New "ETH Balance" tab showing individual wallet balances and total
+4. **Features**:
+   - Individual wallet ETH balance display
+   - Total ETH and USD value across all wallets
+   - Current ETH price in USD
+   - Address deduplication (case-insensitive)
+   - Error handling with user-visible messages
+   - Partial success handling (shows available data when some wallets fail)
 
 ### October 17, 2025 - Vercel to Replit Migration
 Successfully migrated the project from Vercel to Replit environment:
