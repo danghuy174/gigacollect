@@ -24,6 +24,19 @@ type EnergyInfo = {
   maxEnergy: number;
 };
 
+type WalletEthBalance = {
+  address: string;
+  ethBalance: number;
+  ethBalanceUsd: number;
+};
+
+type EthBalanceData = {
+  wallets: WalletEthBalance[];
+  totalEth: number;
+  totalUsd: number;
+  ethPriceUsd: number;
+};
+
 export default function Home() {
   const [addressesText, setAddressesText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -33,7 +46,8 @@ export default function Home() {
   const [searchText, setSearchText] = useState("");
   const [progress, setProgress] = useState({ current: 0, total: 0, message: "" });
   const [energies, setEnergies] = useState<Record<string, EnergyInfo | { error: string }>>({});
-  const [activeTab, setActiveTab] = useState<'items' | 'energy'>("items");
+  const [ethBalances, setEthBalances] = useState<EthBalanceData | null>(null);
+  const [activeTab, setActiveTab] = useState<'items' | 'energy' | 'eth'>("items");
 
   const addresses = useMemo(
     () =>
@@ -62,9 +76,10 @@ export default function Home() {
     setLoading(true);
     setError(null);
     setEnergies({});
+    setEthBalances(null);
 
-    // We'll track progress for each address energy + 1 step for items aggregation
-    const totalSteps = (addresses.length > 0 ? addresses.length : 1) + 1;
+    // We'll track progress for each address energy + 1 step for items + 1 step for ETH balance
+    const totalSteps = (addresses.length > 0 ? addresses.length : 1) + 2;
     setProgress({ current: 0, total: totalSteps, message: "Đang xử lý..." });
 
     // Kick off energy fetches per address (skip in offline mode)
@@ -99,11 +114,31 @@ export default function Home() {
       if (!res.ok) throw new Error(await res.text());
       const json = (await res.json()) as ApiResponse;
       setResults(json.data ?? []);
-      setProgress((p) => ({ ...p, current: energyPromises.length === 0 ? totalSteps : Math.min(p.current + 1, totalSteps), message: "Hoàn thành!" }));
+      setProgress((p) => ({ ...p, current: Math.min(p.current + 1, totalSteps) }));
     })();
 
+    // Kick off ETH balance fetch (skip in offline mode)
+    const ethBalancePromise = offline
+      ? Promise.resolve()
+      : (async () => {
+          try {
+            const res = await fetch("/api/eth-balance", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ addresses }),
+            });
+            if (!res.ok) throw new Error(`ETH Balance HTTP ${res.status}`);
+            const json = (await res.json()) as { data: EthBalanceData };
+            setEthBalances(json.data);
+          } catch (err: unknown) {
+            console.error("Failed to fetch ETH balances:", err);
+          } finally {
+            setProgress((p) => ({ ...p, current: Math.min(p.current + 1, totalSteps), message: "Hoàn thành!" }));
+          }
+        })();
+
     try {
-      await Promise.allSettled([itemsPromise, Promise.allSettled(energyPromises)]);
+      await Promise.allSettled([itemsPromise, ethBalancePromise, Promise.allSettled(energyPromises)]);
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Request failed";
       setError(message);
@@ -180,6 +215,12 @@ export default function Home() {
                   onClick={() => setActiveTab('energy')}
                 >
                   Năng lượng
+                </button>
+                <button
+                  className={`px-4 py-2 text-sm transition border-l border-white/10 ${activeTab === 'eth' ? 'bg-violet-600 text-white' : 'text-gray-300 hover:bg-white/5'}`}
+                  onClick={() => setActiveTab('eth')}
+                >
+                  ETH Balance
                 </button>
               </div>
             </div>
@@ -305,6 +346,55 @@ export default function Home() {
                         </div>
                       );
                     })}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {activeTab === 'eth' && (
+            <>
+              {offline && addresses.length > 0 && (
+                <div className="mt-6 text-sm text-gray-400">
+                  ETH Balance không khả dụng ở chế độ offline.
+                </div>
+              )}
+
+              {!offline && addresses.length > 0 && (
+                <div className="mt-6">
+                  {ethBalances && (
+                    <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-violet-900/50 to-cyan-900/50 border border-white/20">
+                      <div className="text-sm font-medium text-gray-300 mb-2">Tổng cộng ({ethBalances.wallets.length} ví)</div>
+                      <div className="flex items-baseline gap-3">
+                        <span className="text-3xl font-bold text-white">{ethBalances.totalEth.toFixed(6)} ETH</span>
+                        <span className="text-lg text-emerald-400">${ethBalances.totalUsd.toFixed(2)} USD</span>
+                      </div>
+                      {ethBalances.ethPriceUsd > 0 && (
+                        <div className="text-xs text-gray-400 mt-2">
+                          Giá ETH: ${ethBalances.ethPriceUsd.toFixed(2)} USD
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="text-sm font-medium text-gray-200 mb-2">Chi tiết từng ví</div>
+                  <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                    {ethBalances?.wallets.map((wallet) => (
+                      <div key={`eth-${wallet.address}`} className="rounded-lg p-4 bg-black/30 border border-white/10">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs text-gray-400 truncate mb-1">{wallet.address}</div>
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-lg font-bold text-white">{wallet.ethBalance.toFixed(6)} ETH</span>
+                              <span className="text-sm text-emerald-400">${wallet.ethBalanceUsd.toFixed(2)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {(!ethBalances || ethBalances.wallets.length === 0) && !loading && (
+                      <div className="text-sm text-gray-400">Không có dữ liệu ETH balance. Nhấn &quot;Lấy Item&quot; để tải.</div>
+                    )}
                   </div>
                 </div>
               )}
