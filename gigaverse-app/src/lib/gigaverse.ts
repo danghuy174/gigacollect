@@ -66,6 +66,78 @@ export async function fetchPlayerEnergy(address: string): Promise<{ energyValue:
   }
 }
 
+export type EthBalanceResponse = {
+  ethBalance: string;
+  ethPriceUsd: string;
+};
+
+export type WalletEthBalance = {
+  address: string;
+  ethBalance: number;
+  ethBalanceUsd: number;
+};
+
+export async function fetchEthBalance(address: string): Promise<WalletEthBalance | null> {
+  try {
+    const res = await fetch(`https://gigaverse.io/api/marketplace/eth/player/${address}`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = (await res.json()) as EthBalanceResponse;
+    const ethBalance = parseFloat(json.ethBalance);
+    const ethPriceUsd = parseFloat(json.ethPriceUsd);
+    if (!Number.isFinite(ethBalance) || !Number.isFinite(ethPriceUsd)) return null;
+    return {
+      address,
+      ethBalance,
+      ethBalanceUsd: ethBalance * ethPriceUsd
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchMultipleEthBalances(addresses: string[]): Promise<{
+  wallets: WalletEthBalance[];
+  totalEth: number;
+  totalUsd: number;
+  ethPriceUsd: number;
+}> {
+  const validAddresses = addresses.map(addr => addr.trim()).filter(Boolean);
+  const BATCH_SIZE = 10;
+  const wallets: WalletEthBalance[] = [];
+  let ethPriceUsd = 0;
+
+  for (let i = 0; i < validAddresses.length; i += BATCH_SIZE) {
+    const batch = validAddresses.slice(i, i + BATCH_SIZE);
+    const batchPromises = batch.map(async (address) => {
+      try {
+        const res = await fetch(`https://gigaverse.io/api/marketplace/eth/player/${address}`, { cache: "no-store" });
+        if (!res.ok) return null;
+        const json = (await res.json()) as EthBalanceResponse;
+        const ethBalance = parseFloat(json.ethBalance);
+        const price = parseFloat(json.ethPriceUsd);
+        if (!Number.isFinite(ethBalance) || !Number.isFinite(price)) return null;
+        if (ethPriceUsd === 0) ethPriceUsd = price;
+        return {
+          address,
+          ethBalance,
+          ethBalanceUsd: ethBalance * price
+        };
+      } catch {
+        return null;
+      }
+    });
+    const results = await Promise.all(batchPromises);
+    for (const result of results) {
+      if (result) wallets.push(result);
+    }
+  }
+
+  const totalEth = wallets.reduce((sum, w) => sum + w.ethBalance, 0);
+  const totalUsd = wallets.reduce((sum, w) => sum + w.ethBalanceUsd, 0);
+
+  return { wallets, totalEth, totalUsd, ethPriceUsd };
+}
+
 async function readJsonFromFile<T = unknown>(relativeFilePath: string): Promise<T> {
   const filePath = path.join(process.cwd(), relativeFilePath);
   const content = await readFile(filePath, "utf8");
