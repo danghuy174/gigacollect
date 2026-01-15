@@ -12,7 +12,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Frontend Architecture
 
-**Framework**: Next.js 15.5.6 with App Router and React 19
+**Framework**: Next.js 16.1.2 (Turbopack) with App Router and React 19
 - **Reasoning**: Modern Next.js architecture with App Router provides server-side rendering capabilities, file-based routing, and integrated API routes
 - **Client-Side State**: React hooks (useState, useMemo) for managing user input, loading states, and results
 - **Styling**: Tailwind CSS v4 with custom theme configuration for responsive, utility-first styling
@@ -93,7 +93,7 @@ Preferred communication style: Simple, everyday language.
 
 **NPM Dependencies**:
 - **Production**:
-  - `next`: 15.5.6 (React framework)
+  - `next`: 16.1.2 (React framework with Turbopack)
   - `react`: 19.1.0 (UI library)
   - `react-dom`: 19.1.0 (React DOM rendering)
   
@@ -110,6 +110,13 @@ Preferred communication style: Simple, everyday language.
 - **Hot Reload**: Next.js development server with auto-update on file changes
 
 ## Recent Changes
+
+### January 15, 2026 - Security Update: Next.js 16.1.2
+Updated Next.js from 15.5.6 to 16.1.2 for security compliance:
+
+1. **Next.js Update**: Upgraded to version 16.1.2 with Turbopack as the new default bundler
+2. **Config Migration**: Replaced webpack configuration with turbopack configuration in next.config.ts
+3. **Cross-Origin Fix**: Updated allowedDevOrigins to properly handle Replit development domains
 
 ### January 15, 2026 - ETH Balance Feature
 Added new feature to display ETH balance for each wallet address:

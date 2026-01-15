@@ -9,16 +9,13 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  allowedDevOrigins: process.env.REPLIT_DOMAINS 
-    ? process.env.REPLIT_DOMAINS.split(',').map(domain => `https://${domain}`)
-    : [],
-  webpack: (config) => {
-    config.watchOptions = {
-      poll: 1000,
-      aggregateTimeout: 300,
-    };
-    return config;
-  },
+  allowedDevOrigins: [
+    '127.0.0.1',
+    ...(process.env.REPLIT_DOMAINS 
+      ? process.env.REPLIT_DOMAINS.split(',').flatMap(domain => [domain, `https://${domain}`])
+      : []),
+  ],
+  turbopack: {},
 };
 
 export default nextConfig;
